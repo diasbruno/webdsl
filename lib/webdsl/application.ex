@@ -9,8 +9,15 @@ defmodule Webdsl.Application do
   def start(_type, _args) do
     port = Application.get_env(:webdsl, :port, 4000)
 
+    dispatch =
+      :cowboy_router.compile([
+        {:_, [{"/", Webdsl.Handler, []}, {:_, Webdsl.Handler.NotFound, []}]}
+      ])
+
     children = [
-      {Plug.Cowboy, scheme: :http, plug: Webdsl.Router, options: [port: port]}
+      :ranch.child_spec(:http, :ranch_tcp, [{:port, port}], :cowboy_clear, %{
+        env: %{dispatch: dispatch}
+      })
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
